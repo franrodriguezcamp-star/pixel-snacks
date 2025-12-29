@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Snacks | Hecho para disfrutar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Montserrat:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #d4af37;
+            --dark-gold: #996515;
+            --black: #0a0a0a;
+        }
+
+        body {
+            background-color: var(--black);
+            color: white;
+            font-family: 'Montserrat', sans-serif;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        .font-syncopate { font-family: 'Syncopate', sans-serif; }
+
+        .gold-gradient {
+            background: linear-gradient(135deg, #fbf5b7 0%, #d4af37 50%, #996515 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gold-border {
+            border: 1px solid var(--gold);
+        }
+
+        .luxury-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .luxury-card:hover {
+            border-color: var(--gold);
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(212, 175, 55, 0.1);
+        }
+
+        /* Intro Animation */
+        #intro-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            background: black;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 1s ease-out;
+        }
+
+        .glimmer-text {
+            animation: glimmer 3s infinite ease-in-out;
+        }
+
+        @keyframes glimmer {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; text-shadow: 0 0 20px var(--gold); }
+        }
+
+        .hidden-panel {
+            display: none;
+        }
+
+        /* Game Canvas */
+        .game-area {
+            width: 100%;
+            height: 400px;
+            background: #111;
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(212, 175, 55, 0.1);
+        }
+
+        #game-container { cursor: crosshair; }
+
+        .pixel-bit {
+            position: absolute;
+            font-size: 24px;
+            user-select: none;
+        }
+
+        /* Notifications */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--gold);
+            color: black;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 1000;
+            display: none;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100px); }
+            to { transform: translateY(0); }
+        }
+
+        .method-btn {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .method-btn:hover {
+            background: var(--gold);
+            color: black;
+            transform: scale(1.05);
+        }
+
+        /* Modals */
+        .modal-bg {
+            background: rgba(0,0,0,0.95);
+            backdrop-filter: blur(8px);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Intro Overlay -->
+    <div id="intro-overlay">
+        <h1 class="font-syncopate text-4xl md:text-7xl gold-gradient glimmer-text mb-4 text-center px-4 text-white">PIXEL SNACKS</h1>
+        <p class="text-gray-400 tracking-widest uppercase text-sm md:text-lg">Hecho para disfrutar</p>
+        <button onclick="startExperience()" class="mt-12 px-8 py-3 gold-border text-gold hover:bg-gold hover:text-black transition-all duration-500 font-bold uppercase tracking-widest">
+            Entrar al Reino
+        </button>
+    </div>
+
+    <!-- Main Content -->
+    <div id="main-content" class="hidden">
+        
+        <!-- Header -->
+        <header class="p-6 flex justify-between items-center border-b border-white/10 sticky top-0 bg-black/80 backdrop-blur-md z-50">
+            <div class="font-syncopate text-2xl gold-gradient font-bold">PIXEL SNACKS</div>
+            <nav class="hidden md:flex space-x-8 text-xs uppercase tracking-widest">
+                <a href="#catalogo" class="hover:text-gold transition text-white">Catálogo</a>
+                <a href="#arcade" class="hover:text-gold transition text-white">Arcade Zone</a>
+                <a href="#contacto" class="hover:text-gold transition text-white">Contacto</a>
+                <button onclick="openAdminAuth()" class="opacity-30 hover:opacity-100 transition text-white">Admin</button>
+            </nav>
+            <div class="flex items-center gap-4">
+                <button onclick="toggleCart()" class="relative p-2">
+                    <svg class="w-6 h-6 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                    <span id="cart-count" class="absolute top-0 right-0 bg-white text-black text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">0</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Admin Auth Modal -->
+        <div id="admin-auth" class="fixed inset-0 z-[100] modal-bg flex items-center justify-center hidden p-4">
+            <div class="bg-zinc-900 border border-gold/50 p-8 rounded-2xl w-full max-w-md text-center">
+                <h3 class="font-syncopate text-gold text-xl mb-6">ACCESO RESTRINGIDO</h3>
+                <input id="admin-password" type="password" placeholder="Contraseña de administrador" class="w-full bg-black border border-gold/20 p-3 rounded mb-4 text-center focus:border-gold outline-none text-white">
+                <div class="flex gap-2">
+                    <button onclick="closeAdminAuth()" class="flex-1 py-2 border border-white/20 rounded hover:bg-white/10 transition text-white">Cancelar</button>
+                    <button onclick="verifyAdmin()" class="flex-1 py-2 bg-gold text-black font-bold rounded hover:bg-white transition">Acceder</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Checkout Selector Modal -->
+        <div id="checkout-modal" class="fixed inset-0 z-[100] modal-bg flex items-center justify-center hidden p-4">
+            <div class="bg-zinc-900 border border-gold/50 p-8 rounded-2xl w-full max-w-lg text-center">
+                <h3 class="font-syncopate text-gold text-xl mb-2">FINALIZAR PEDIDO</h3>
+                <p class="text-gray-400 text-sm mb-8">Seleccioná con qué socio querés coordinar la entrega:</p>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button onclick="sendWhatsApp('benja')" class="group p-6 bg-black border border-white/10 rounded-xl hover:border-gold transition-all text-left">
+                        <span class="block text-xs text-gray-500 mb-1 uppercase tracking-tighter">Socio Fundador</span>
+                        <span class="block text-xl font-bold text-white group-hover:text-gold transition">BENJA</span>
+                        <span class="block text-[10px] text-green-500 mt-2">● Online ahora</span>
+                    </button>
+                    <button onclick="sendWhatsApp('fran')" class="group p-6 bg-black border border-white/10 rounded-xl hover:border-gold transition-all text-left">
+                        <span class="block text-xs text-gray-500 mb-1 uppercase tracking-tighter">Socio Ejecutivo</span>
+                        <span class="block text-xl font-bold text-white group-hover:text-gold transition">FRANCISCO</span>
+                        <span class="block text-[10px] text-green-500 mt-2">● Online ahora</span>
+                    </button>
+                </div>
+                
+                <button onclick="closeCheckout()" class="mt-8 text-xs text-gray-500 hover:text-white underline uppercase tracking-widest">Volver al carrito</button>
+            </div>
+        </div>
+
+        <!-- Hero -->
+        <section class="py-20 px-6 text-center">
+            <h2 class="text-5xl md:text-8xl font-syncopate font-bold mb-6 text-white">EL SABOR DE <br><span class="gold-gradient">SAN BONIFACIO</span></h2>
+            <p class="max-w-2xl mx-auto text-gray-400 text-lg mb-10">La élite de las golosinas ha llegado al instituto. Calidad premium, entrega inmediata.</p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="https://wa.me/ais/1856561831668876?s=5" target="_blank" class="px-8 py-4 bg-green-600 hover:bg-green-700 text-white rounded-full font-bold flex items-center gap-2 transition shadow-xl shadow-green-900/20">
+                    Chatea con nuestra IA Asistente
+                </a>
+            </div>
+        </section>
+
+        <!-- Admin Panel -->
+        <div id="admin-panel" class="hidden-panel mx-auto max-w-4xl p-8 mb-10 bg-zinc-900 border-2 border-dashed border-gold/50 rounded-2xl relative">
+            <button onclick="toggleAdmin()" class="absolute top-4 right-4 text-gray-500 hover:text-white">Cerrar Sesión X</button>
+            <h3 class="text-2xl font-syncopate text-gold mb-6">PANEL DE CONTROL</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <h4 class="font-bold uppercase tracking-widest text-xs text-white">Agregar Producto</h4>
+                    <input id="admin-name" type="text" placeholder="Nombre" class="w-full bg-black border border-white/20 p-2 rounded text-white">
+                    <input id="admin-category" type="text" placeholder="Categoría" class="w-full bg-black border border-white/20 p-2 rounded text-white">
+                    <button onclick="addNewProduct()" class="w-full bg-gold text-black font-bold py-2 rounded">Añadir al Stock</button>
+                </div>
+                <div class="space-y-4">
+                    <h4 class="font-bold uppercase tracking-widest text-xs text-white">Gestión Rápida</h4>
+                    <div id="admin-stock-list" class="max-h-40 overflow-y-auto space-y-2 text-sm"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Catalogo -->
+        <section id="catalogo" class="py-20 px-6 max-w-7xl mx-auto">
+            <div class="flex justify-between items-end mb-12">
+                <div>
+                    <h3 class="text-gold font-syncopate tracking-tighter">OUR COLLECTION</h3>
+                    <h2 class="text-4xl font-bold text-white uppercase">Las Golosinas</h2>
+                </div>
+                <div class="flex gap-2 text-white text-right">
+                    <span class="bg-gold/10 text-gold px-4 py-1 rounded-full text-[10px] font-bold border border-gold/20 italic uppercase tracking-widest">Stock Limitado</span>
+                </div>
+            </div>
+
+            <div id="product-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <!-- Products will be injected here -->
+            </div>
+        </section>
+
+        <!-- Secret Key Section -->
+        <section class="py-20 px-6 bg-zinc-900/50">
+            <div class="max-w-4xl mx-auto text-center">
+                <div class="inline-block p-4 rounded-full bg-gold/10 mb-6">
+                    <svg class="w-12 h-12 text-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                </div>
+                <h2 class="text-3xl font-syncopate mb-4 text-white uppercase">¿Descubriste el secreto?</h2>
+                <p class="text-gray-400 mb-8 italic">Ingresá la clave de San Bonifacio para obtener un beneficio único.</p>
+                
+                <div id="key-input-area">
+                    <div class="flex gap-2 max-w-md mx-auto">
+                        <input id="secret-key-input" type="password" placeholder="Clave..." class="flex-1 bg-black border-b-2 border-gold/30 p-4 focus:border-gold outline-none transition text-center tracking-[1em] text-white">
+                        <button onclick="checkSecretKey()" class="bg-gold text-black px-6 font-bold uppercase hover:bg-white transition">Validar</button>
+                    </div>
+                </div>
+
+                <div id="secret-msg" class="mt-10 hidden p-8 bg-black border-2 border-gold rounded-3xl animate-pulse">
+                    <h3 class="text-gold font-syncopate text-2xl mb-2">¡ACCESO CONCEDIDO!</h3>
+                    <p class="text-white mb-6 uppercase tracking-widest text-sm">Comprobante de victoria: <span class="font-bold text-xl">52189548</span></p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button onclick="sendSecretWhatsApp('benja')" class="px-6 py-3 bg-green-600 text-white font-bold rounded hover:bg-green-500 transition flex items-center justify-center gap-2">
+                            Enviar a Benja 📱
+                        </button>
+                        <button onclick="sendSecretWhatsApp('fran')" class="px-6 py-3 bg-green-600 text-white font-bold rounded hover:bg-green-500 transition flex items-center justify-center gap-2">
+                            Enviar a Francisco 📱
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Arcade Zone -->
+        <section id="arcade" class="py-20 px-6 max-w-7xl mx-auto text-center">
+            <h3 class="text-gold font-syncopate tracking-widest text-sm mb-2">TIME TO PLAY</h3>
+            <h2 class="text-5xl font-bold mb-12 text-white uppercase">Arcade Zone</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div class="bg-white/5 p-8 rounded-3xl border border-white/10">
+                    <h3 class="text-2xl font-syncopate mb-4 text-white uppercase">Pixel Catcher</h3>
+                    <p class="text-gray-400 mb-6 text-sm">Atrapá los caramelos antes de que caigan.</p>
+                    <div id="game-container" class="game-area">
+                        <div id="score" class="absolute top-4 left-4 font-syncopate text-gold text-xl">Score: 0</div>
+                        <div id="player" class="absolute bottom-4 left-1/2 -translate-x-1/2 text-4xl">🛒</div>
+                    </div>
+                </div>
+
+                <div class="bg-white/5 p-8 rounded-3xl border border-white/10">
+                    <h3 class="text-2xl font-syncopate mb-4 text-white uppercase">Candy Clicker</h3>
+                    <p class="text-gray-400 mb-6 text-sm">¡Click al helado gigante para fabricar stock!</p>
+                    <div id="clicker-game" class="game-area flex flex-col items-center justify-center">
+                        <div id="click-score" class="text-3xl font-syncopate text-gold mb-8 uppercase tracking-widest">0 Snacks</div>
+                        <button onclick="candyClick()" class="text-9xl transform active:scale-90 transition cursor-pointer select-none">🍦</button>
+                        <p class="mt-6 text-xs text-gray-500">¿Llegarás a los 1000?</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Contacto / Footer -->
+        <footer id="contacto" class="py-20 px-6 border-t border-white/10">
+            <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 text-left">
+                <div>
+                    <h4 class="font-syncopate text-gold mb-6 text-xl">PIXEL SNACKS</h4>
+                    <p class="text-gray-400 text-sm leading-relaxed">
+                        Exclusividad y sabor en cada bocado. Operando exclusivamente en el Instituto Tecnológico San Bonifacio.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-6 text-xl uppercase tracking-widest text-sm text-white">CONTACTO DIRECTO</h4>
+                    <div class="space-y-4">
+                        <a href="https://wa.me/5491172184206" target="_blank" class="flex items-center gap-3 group text-white">
+                            <span class="text-[10px] bg-white/10 px-2 py-1 rounded group-hover:bg-gold group-hover:text-black transition uppercase">Benja</span>
+                            <span class="text-gray-300 group-hover:text-gold">+54 9 11 7218-4206</span>
+                        </a>
+                        <a href="https://wa.me/5491173646548" target="_blank" class="flex items-center gap-3 group text-white">
+                            <span class="text-[10px] bg-white/10 px-2 py-1 rounded group-hover:bg-gold group-hover:text-black transition uppercase">Francisco</span>
+                            <span class="text-gray-300 group-hover:text-gold">+54 9 11 7364-6548</span>
+                        </a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-6 text-xl uppercase tracking-widest text-sm text-white">MÉTODOS DE PAGO</h4>
+                    <div class="flex flex-wrap gap-3 mb-6">
+                        <a href="https://www.paypal.com" target="_blank" class="method-btn px-4 py-2 border border-white/10 rounded font-bold text-[10px] text-white">PAYPAL</a>
+                        <a href="https://www.mercadopago.com.ar" target="_blank" class="method-btn px-4 py-2 border border-white/10 rounded font-bold text-[10px] text-white">MERCADO PAGO</a>
+                        <button onclick="cashJoke()" class="method-btn px-4 py-2 border border-white/10 rounded font-bold text-[10px] text-white">EFECTIVO</button>
+                    </div>
+                    <p class="text-xs text-gray-500 italic">Precios actualizados semanalmente.</p>
+                </div>
+            </div>
+            <div class="text-center mt-20 text-[10px] tracking-[0.3em] text-gray-600">
+                PIXEL SNACKS © 2026 - SAN BONIFACIO TECH
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- Cart Sidebar -->
+    <div id="cart-sidebar" class="fixed top-0 right-0 w-80 h-full bg-black border-l border-gold/30 z-[60] transform translate-x-full transition-transform duration-500 p-6 flex flex-col shadow-2xl shadow-gold/20">
+        <div class="flex justify-between items-center mb-8">
+            <h3 class="font-syncopate text-gold">CARRITO</h3>
+            <button onclick="toggleCart()" class="text-white hover:text-gold transition">✕</button>
+        </div>
+        <div id="cart-items" class="flex-1 overflow-y-auto space-y-4"></div>
+        <div class="border-t border-white/10 pt-6">
+            <p class="text-xs text-gray-500 mb-4">* Precios no disponibles - Consultar por WhatsApp</p>
+            <button onclick="openCheckout()" class="w-full bg-gold text-black font-bold py-4 hover:bg-white transition flex items-center justify-center gap-2 uppercase tracking-widest text-xs">
+                Finalizar Consulta 💬
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // State
+        let products = [
+            { id: 1, name: "Rocklets", category: "Chocolate", offers: false, image: "🍫" },
+            { id: 2, name: "Cofler Block", category: "Premium Chocolate", offers: true, image: "🍪" },
+            { id: 3, name: "Helado de Verano", category: "Ice Cream", offers: false, image: "🍦" },
+            { id: 4, name: "Mix Especial", category: "Golosinas", offers: false, image: "🍬" }
+        ];
+
+        let cart = [];
+        let score = 0;
+        let clickCount = 0;
+
+        const cashJokes = [
+            "¿Página oficial del efectivo? Se llama 'Billetera'.",
+            "Error 404: El billete no tiene link de descarga.",
+            "El efectivo no tiene sitio web, pero acepta propinas en el mundo real.",
+            "Insertá el billete por el puerto USB para continuar (No lo hagas).",
+            "¿Web de efectivo? ¡Si querés te mando un PDF de un billete de 100!",
+            "El papel moneda es analógico, como los recreos del San Bonifacio."
+        ];
+
+        // Sound Effects
+        const playSound = () => {
+            const context = new (window.AudioContext || window.webkitAudioContext)();
+            if (context.state === 'suspended') context.resume();
+            const oscillator = context.createOscillator();
+            const gain = context.createGain();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(440, context.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(880, context.currentTime + 0.5);
+            gain.gain.setValueAtTime(0.1, context.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.5);
+            oscillator.connect(gain);
+            gain.connect(context.destination);
+            oscillator.start();
+            oscillator.stop(context.currentTime + 0.5);
+        };
+
+        function startExperience() {
+            playSound();
+            document.getElementById('intro-overlay').style.opacity = '0';
+            setTimeout(() => {
+                document.getElementById('intro-overlay').style.display = 'none';
+                document.getElementById('main-content').classList.remove('hidden');
+                initCatcherGame();
+                renderProducts();
+            }, 1000);
+        }
+
+        // Render Functions
+        function renderProducts() {
+            const grid = document.getElementById('product-grid');
+            const adminList = document.getElementById('admin-stock-list');
+            
+            grid.innerHTML = products.map(p => `
+                <div class="luxury-card p-8 rounded-3xl text-center flex flex-col items-center">
+                    <div class="text-6xl mb-6 transform transition hover:scale-125 cursor-default">${p.image}</div>
+                    ${p.offers ? '<span class="text-[10px] bg-gold text-black px-2 py-0.5 rounded font-bold mb-2 uppercase">Oferta</span>' : ''}
+                    <h3 class="text-xl font-bold mb-1 text-white uppercase">${p.name}</h3>
+                    <p class="text-xs text-gray-500 mb-6 uppercase tracking-widest">${p.category}</p>
+                    <div class="text-sm text-gold font-bold mb-6 tracking-widest underline underline-offset-4 uppercase">Precio a consultar</div>
+                    <button onclick="addToCart(${p.id})" class="w-full py-3 gold-border text-xs font-bold hover:bg-gold hover:text-black transition uppercase tracking-widest text-white hover:text-black">Añadir al carrito</button>
+                </div>
+            `).join('');
+
+            adminList.innerHTML = products.map(p => `
+                <div class="flex justify-between items-center bg-black/40 p-2 rounded text-white border border-white/5">
+                    <span class="uppercase text-xs">${p.name}</span>
+                    <button onclick="removeProduct(${p.id})" class="text-red-500 text-xs hover:underline">Eliminar</button>
+                </div>
+            `).join('');
+        }
+
+        // Admin Security Logic
+        function openAdminAuth() {
+            document.getElementById('admin-auth').classList.remove('hidden');
+        }
+
+        function closeAdminAuth() {
+            document.getElementById('admin-auth').classList.add('hidden');
+            document.getElementById('admin-password').value = '';
+        }
+
+        function verifyAdmin() {
+            const pass = document.getElementById('admin-password').value;
+            if(pass === 'rodriguezsaracho.admin') {
+                showToast("✅ Acceso Admin concedido");
+                closeAdminAuth();
+                document.getElementById('admin-panel').classList.remove('hidden-panel');
+                document.getElementById('admin-panel').scrollIntoView({ behavior: 'smooth' });
+            } else {
+                showToast("❌ Contraseña incorrecta");
+            }
+        }
+
+        function toggleAdmin() {
+            document.getElementById('admin-panel').classList.add('hidden-panel');
+            showToast("Sesión de Admin cerrada");
+        }
+
+        // Checkout Logic
+        function openCheckout() {
+            if(cart.length === 0) return showToast("El carrito está vacío.");
+            toggleCart(); // Close sidebar
+            document.getElementById('checkout-modal').classList.remove('hidden');
+        }
+
+        function closeCheckout() {
+            document.getElementById('checkout-modal').classList.add('hidden');
+        }
+
+        function sendWhatsApp(socio) {
+            const numbers = {
+                'benja': '5491172184206',
+                'fran': '5491173646548'
+            };
+            
+            const message = `¡Hola Pixel Snacks! Quisiera consultar precios y coordinar la entrega de mi pedido: ${cart.map(i => i.name).join(', ')}`;
+            window.open(`https://wa.me/${numbers[socio]}?text=${encodeURIComponent(message)}`);
+            closeCheckout();
+        }
+
+        // Secret Section Logic
+        function checkSecretKey() {
+            const val = document.getElementById('secret-key-input').value;
+            if(val === 'sanbocandy2026') {
+                playSound();
+                document.getElementById('key-input-area').classList.add('hidden');
+                document.getElementById('secret-msg').classList.remove('hidden');
+                showToast("🎁 ¡BENEFICIO DESBLOQUEADO!");
+                document.body.style.boxShadow = "inset 0 0 100px rgba(212,175,55,0.4)";
+            } else {
+                showToast("Clave incorrecta...");
+            }
+        }
+
+        function sendSecretWhatsApp(socio) {
+            const numbers = {
+                'benja': '5491172184206',
+                'fran': '5491173646548'
+            };
+            const message = "¡hola he adivinado el codigo secreto, el comprovante es 52189548!";
+            window.open(`https://wa.me/${numbers[socio]}?text=${encodeURIComponent(message)}`);
+        }
+
+        // Cart Logic
+        function addToCart(id) {
+            const product = products.find(p => p.id === id);
+            cart.push(product);
+            updateCartUI();
+            showToast(`¡${product.name} añadido!`);
+        }
+
+        function updateCartUI() {
+            document.getElementById('cart-count').innerText = cart.length;
+            const cartItems = document.getElementById('cart-items');
+            cartItems.innerHTML = cart.map((item, index) => `
+                <div class="flex justify-between items-center bg-zinc-900 p-3 rounded border border-white/5 text-white">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">${item.image}</span>
+                        <div>
+                            <p class="text-sm font-bold uppercase">${item.name}</p>
+                            <p class="text-[10px] text-gray-500 uppercase tracking-tighter">Premium Stock</p>
+                        </div>
+                    </div>
+                    <button onclick="removeFromCart(${index})" class="text-gray-500 hover:text-white transition">✕</button>
+                </div>
+            `).join('');
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            updateCartUI();
+        }
+
+        function toggleCart() {
+            const sidebar = document.getElementById('cart-sidebar');
+            sidebar.classList.toggle('translate-x-full');
+        }
+
+        // Admin CRUD
+        function addNewProduct() {
+            const name = document.getElementById('admin-name').value;
+            const cat = document.getElementById('admin-category').value;
+            if(!name || !cat) return showToast("Faltan datos");
+            
+            products.push({
+                id: Date.now(),
+                name: name,
+                category: cat,
+                offers: false,
+                image: "🍬"
+            });
+            
+            document.getElementById('admin-name').value = '';
+            document.getElementById('admin-category').value = '';
+            renderProducts();
+            showToast("Producto añadido");
+        }
+
+        function removeProduct(id) {
+            products = products.filter(p => p.id !== id);
+            renderProducts();
+        }
+
+        // Miscellaneous
+        function cashJoke() {
+            const randomJoke = cashJokes[Math.floor(Math.random() * cashJokes.length)];
+            showToast(randomJoke);
+        }
+
+        function initCatcherGame() {
+            const container = document.getElementById('game-container');
+            const player = document.getElementById('player');
+            const scoreEl = document.getElementById('score');
+
+            container.addEventListener('mousemove', (e) => {
+                const rect = container.getBoundingClientRect();
+                let x = e.clientX - rect.left;
+                x = Math.max(20, Math.min(rect.width - 20, x));
+                player.style.left = `${x}px`;
+            });
+
+            setInterval(() => {
+                const arcadeSec = document.getElementById('arcade');
+                if (!arcadeSec || arcadeSec.getBoundingClientRect().top > window.innerHeight || arcadeSec.getBoundingClientRect().bottom < 0) return;
+
+                const bit = document.createElement('div');
+                bit.className = 'pixel-bit';
+                bit.innerHTML = ['🍬', '🍭', '🍫', '🍦'][Math.floor(Math.random()*4)];
+                bit.style.left = Math.random() * 90 + '%';
+                bit.style.top = '-40px';
+                bit.style.transition = 'top 2s linear';
+                container.appendChild(bit);
+
+                setTimeout(() => bit.style.top = '400px', 10);
+
+                const checkInterval = setInterval(() => {
+                    const pRect = player.getBoundingClientRect();
+                    const bRect = bit.getBoundingClientRect();
+
+                    if (bRect.bottom >= pRect.top && 
+                        bRect.left < pRect.right && 
+                        bRect.right > pRect.left) {
+                        score++;
+                        scoreEl.innerText = `Score: ${score}`;
+                        bit.remove();
+                        clearInterval(checkInterval);
+                    }
+                }, 50);
+
+                setTimeout(() => {
+                    if(bit.parentNode) bit.remove();
+                    clearInterval(checkInterval);
+                }, 2000);
+
+            }, 1200);
+        }
+
+        function candyClick() {
+            clickCount++;
+            document.getElementById('click-score').innerText = `${clickCount} SNACKS`;
+            if(clickCount % 10 === 0) playSound();
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.style.display = 'block';
+            setTimeout(() => t.style.display = 'none', 4000);
+        }
+
+    </script>
+</body>
+</html>
